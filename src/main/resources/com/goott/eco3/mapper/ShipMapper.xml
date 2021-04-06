@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.ShipMapper">
+	
+<insert id="insertShipInfo">
+	INSERT into eco.delivery_main values(SEQ_DELIVERY_MAIN_SEQ.nextval,
+		'',#{order_seq},default,'대한통운',default,#{regUser},'','','','','','','',#{cust_name},
+		#{cust_phone},#{cust_addr_post},#{cust_addr_city},#{cust_addr_detail})
+</insert>
+
+<select id="getPaidShipList" resultType="com.goott.eco3.domain.ShipVO">
+	SELECT * FROM delivery_main where order_seq IN (SELECT ORDER_SEQ FROM ORDER_MAIN WHERE ORDER_STATUS=3)
+</select>
+
+<!--업체용  -->
+<update id="updateShipInfo">
+	UPDATE eco.delivery_main set INVOICE_NO = #{invoice_no}, delivery_status=1,editdate=systimestamp,editUser=#{editUser},
+	sender_name=#{sender_name},sender_phone=#{sender_phone},
+	sender_addr_post=#{sender_addr_post},sender_addr_city=#{sender_addr_city},sender_addr_detail=#{sender_addr_detail}
+	WHERE order_seq=#{order_seq}
+</update>
+
+<select id="getShipList" resultType="com.goott.eco3.domain.ShipVO">
+	SELECT * FROM delivery_main where order_seq =#{order_seq} 
+</select>
+
+<select id="findShipNum" resultType="Long">
+	SELECT delivery_seq FROM delivery_main where order_seq=#{order_seq}
+</select>
+
+<!--회원용  -->
+<update id="updateCheckoutShipInfo">
+	UPDATE eco.delivery_main set cust_name=#{cust_name},cust_phone=#{cust_phone},cust_addr_post=#{cust_addr_post},
+	cust_addr_city=#{cust_addr_city},cust_addr_detail=#{cust_addr_detail} WHERE delivery_seq=#{delivery_seq}
+</update>
+
+</mapper>

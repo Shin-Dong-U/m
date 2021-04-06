@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.GameMapper">
+
+	<select id="getCustPointPlusSum" resultType="Long">
+		SELECT SUM(point_amount)
+		FROM POINT
+		WHERE cust_id = #{cust_id} and memo='add'
+		GROUP BY cust_id
+		
+		
+	</select>
+	
+	<select id="getAfterResetCustPointMinusSum" resultType="Long">
+		
+		SELECT SUM(point_amount)
+		FROM POINT
+		WHERE cust_id = #{cust_id} and (memo='minus')
+		GROUP BY cust_id
+		
+	</select>
+	
+	<select id="getCustPointMinusSum" resultType="Long">
+		
+		SELECT SUM(point_amount)
+		FROM POINT
+		WHERE cust_id = #{cust_id} and (memo='minus' or memo='doneMinus')
+		GROUP BY cust_id
+		
+	</select>
+	
+	<select id="getCheckPlusCnt" resultType="hashMap">
+		
+		SELECT count(*) as "plusCnt"
+		FROM POINT
+		WHERE cust_id = #{cust_id} and memo='add'
+		
+	</select>
+	<select id="getCheckMinusCnt" resultType="hashMap">
+		
+		SELECT count(*) as "minusCnt"
+		FROM POINT
+		WHERE cust_id = #{cust_id} and (memo='minus' or memo='doneMinus')
+		
+	</select>
+	
+	<select id="getCheckRealMinusCnt" resultType="hashMap">
+		
+		SELECT count(*) as "minusCnt"
+		FROM POINT
+		WHERE cust_id = #{cust_id} and (memo='minus')
+		
+	</select>
+	<update id="resetMinus">
+		UPDATE POINT SET memo='doneMinus' WHERE cust_id=#{cust_id} AND memo='minus'
+	</update>
+	
+	
+	<insert id="insertUseItem">
+		INSERT INTO POINT values(seq_point_seq.nextval,#{cust_id},'',
+		(SELECT ITEM_PRICE FROM GAME_ITEM WHERE item_seq=#{item_seq} ),'minus',#{cust_id},default,'','')
+	</insert>
+	
+	<select id="getGameImageInfo" resultType="com.goott.eco3.domain.GameImageVO">
+		SELECT *FROM game_image where game_level=#{game_level}
+	</select>
+
+	
+</mapper>

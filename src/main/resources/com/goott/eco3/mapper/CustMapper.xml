@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.CustMapper">
+	
+		
+	<resultMap type="com.goott.eco3.domain.CustAuthVO" id="AuthMap">
+		<result property="memberId" column="memberId" />
+		<result property="auth" column="auth" />	
+	</resultMap>
+	
+	<resultMap type="com.goott.eco3.domain.CustVO" id="CustMap">
+		<result property="memberId" column="memberId" />
+		<result property="password" column="password" />
+		<result property="name" column="name" />
+		<result property="phone" column="phone" />
+		<result property="addr_post" column="addr_post" />
+		<result property="addr_city" column="addr_city" />
+		<result property="addr_detail" column="addr_detail" />
+		<result property="birth" column="birth" />
+		<result property="sex" column="sex" />
+		<result property="company_yn" column="company_yn" />
+		<result property="member_yn" column="member_yn" />
+		<result property="regDate" column="regDate" />
+		<result property="regUser" column="regUser" />
+		<result property="editDate" column="editDate" />
+		<result property="editUser" column="editUser" />
+		<result property="myTree" column="myTree" />
+		<result property="myMil" column="myMil" />
+		<result property="bar_status" column="bar_status" />
+		<result property="admin_yn" column="admin_yn" />
+		<result property="seed_yn" column="seed_yn" />
+		<collection property="authList" resultMap="AuthMap" />
+	</resultMap>
+
+	
+	<select id="getCustList" resultType="map">
+		SELECT * FROM eco.cust
+	</select>
+	
+	<select id="getCustId" resultType="com.goott.eco3.domain.CustVO">
+		SELECT memberId, myTree, myMil, bar_status 
+		FROM eco.cust
+		WHERE memberId=#{memberId}
+	</select>
+	
+	<!-- 특정 회원정보 가져오기 -->
+	<select id="getCust" resultType="com.goott.eco3.domain.CustVO">
+		SELECT * 
+		FROM eco.cust
+		WHERE memberId=#{memberId}
+	</select>
+	
+	<!-- 특정 회원정보 가져오기 -->
+	<select id="getAdmin" resultType="com.goott.eco3.domain.AdminVO">
+		SELECT *
+		FROM eco.admin
+		WHERE cust_id=#{memberId}
+	</select>
+	
+	
+	<!-- 특정 회원정보 이름오기 -->
+	<select id="getCustName" resultType="String">
+		SELECT name 
+		FROM eco.cust
+		WHERE memberId=#{memberId}
+	</select>
+	
+	
+	<!-- 특정 회원 권한 가져오기 -->
+	<select id="getCustAuth" resultMap="CustMap">
+		SELECT a.*, b.auth
+		FROM eco.cust a LEFT OUTER JOIN eco.cust_auth b on a.memberId= b.memberId
+		WHERE a.memberId=#{memberId}
+	</select>
+	
+	<!-- 로그인 -->
+	<select id="getCustLogin" resultType="com.goott.eco3.domain.CustVO">
+		SELECT memberId FROM eco.cust 
+		WHERE memberId=#{memberId} AND password=#{password} AND member_yn='Y' 
+	</select>
+	
+	<!-- 아이디 확인 -->
+	<select id="checkCustId" resultType="String">
+		SELECT CASE WHEN count(*)=1 then 'true'
+		ELSE 'false' end as idCheck
+		FROM eco.cust
+		WHERE memberId=#{memberId}
+	</select>
+	
+	<!-- 비밀번호 확인 -->
+	<select id="checkCustPassword" resultType="String">
+		SELECT password FROM eco.cust 
+		WHERE memberId=#{memberId} AND member_yn='Y' 
+	</select>
+	
+	<!-- 회원가입:eco.cust -->
+	<insert id="joinCust">
+		INSERT INTO eco.cust 
+		VALUES(
+			#{memberId},#{password}, #{name}, #{phone}, #{email}, 
+			#{addr_post}, #{addr_city}, #{addr_detail}, #{birth}, #{sex}, 
+			#{company_yn}, default, default, #{memberId}, default, #{memberId}, 
+			default, default, default, default, default
+		)
+	</insert>
+	
+	<!-- 회원가입:eco.cust_auth -->
+	<insert id="joinCustAuth">
+		INSERT INTO eco.cust_auth
+		VALUES(#{memberId}, 'ROLE_CUST')
+	</insert>
+	
+	<!-- 회원수정 -->
+	<update id="modifyCust">
+		UPDATE eco.cust
+		SET
+        <if test="password != null and password !='' ">password=#{password},</if>
+		name=#{name}, phone=#{phone}, 
+		addr_post=#{addr_post}, addr_city=#{addr_city}, addr_detail=#{addr_detail},
+		company_yn=#{company_yn}, editUser=#{memberId}, editDate=default
+		WHERE memberId=#{memberId}
+	</update>
+	
+	<!-- 회원삭제 -->
+	<update id="deleteCust">
+		UPDATE eco.cust
+		SET member_yn = 'N'
+		WHERE memberId = #{memberId}
+	</update>
+	
+	<!-- 회원삭제 -->
+	<delete id="deleteCustAuth">
+		DELETE eco.cust_auth
+		WHERE memberId = #{memberId}
+	</delete>
+</mapper>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.OrderMapper">
+	
+	
+	<!-- <select id="getOrderNum" resultType="Long">
+		select seq_temp_orderNum.nextval from dual
+	</select> 
+	
+
+	<select id="getGoodsNumList" resultType="com.goott.eco.domain.GoodsVOtest">
+		SELECT *FROM GOODS
+		WHERE GOODS_SEQ IN (
+			SELECT GOODS_SEQ FROM ORDER_DETAIL 
+			WHERE order_seq =(SELECT order_seq 
+		  		FROM order_main 
+		  		where cust_id={cust_id} and order_status=0))
+	</select> -->
+	
+	<!--주문하기  시작 -->
+	<insert id="addOrderMain">
+		INSERT INTO eco.order_main values(seq_order_seq.nextval,#{cust_id},default,default,'',default,#{cust_id},'','',#{total_price})
+	</insert>
+	<select id="getOrderSeq" resultType="Long">
+		select order_seq from order_main where cust_id=#{cust_id} and order_status=0
+	</select>
+	<insert id="addOrderDetailBasket">
+		INSERT ALL
+		  INTO order_detail values(#{order_seq},basket_seq,goods_seq,default,#{cust_id},'','',qty)
+		  SELECT b.basket_seq,b.goods_seq,b.qty
+		  FROM eco.basket a LEFT OUTER JOIN eco.basket_detail b
+		  ON a.basket_seq = b.basket_seq
+		  WHERE cust_id = #{cust_id}  AND delete_yn ='N' AND purchase_yn='N' 
+	</insert>
+	<update id="upOrderStatus">
+		UPDATE  eco.order_main SET ORDER_STATUS = 1 WHERE order_seq = #{order_seq}
+	</update>
+	<update id="upBasketStatus">
+		 UPDATE  eco.basket_detail SET purchase_yn = 'Y' 
+		WHERE basket_seq IN (SELECT basket_seq from order_detail where order_seq=#{order_seq})
+   			 AND goods_seq IN (SELECT goods_seq from order_detail where order_seq=#{order_seq})
+			
+	</update>
+	<!--주문하기  끝 -->
+	
+	<!--주문리스트  -->
+	<select id="getOrderList" resultType="com.goott.eco3.domain.GoodsVOtest">
+	<![CDATA[	
+		SELECT *FROM GOODS
+		WHERE GOODS_SEQ IN (
+			SELECT GOODS_SEQ FROM ORDER_DETAIL 
+			WHERE order_seq =(SELECT order_seq 
+		  		FROM order_main 
+		  		where cust_id=#{cust_id}))
+	]]>
+	</select>
+	
+	<!--checkout page  -->
+	<!--to_char사용이유: hashmap으로 timestamp를 받아올 때 타입지정이 명확하지 않아 오류가 발생함  -->
+	<select id="getCheckoutInfo" resultType="hashMap">
+	SELECT a.name,a.phone,a.email,a.addr_post,a.addr_city,a.addr_detail,
+		to_char(a.regdate, 'yyyymmdd') regdate
+		,b.total_price,b.order_seq
+		FROM eco.cust a LEFT OUTER JOIN eco.order_main b
+		ON a.memberid = b.cust_id 
+		WHERE cust_id = #{cust_id} AND order_seq = #{order_seq}
+	</select>
+	
+	<!--결제완료 업데이트  -->
+	<update id="paidUpdate">
+		update eco.order_main set order_status = 3 WHERE cust_id=#{cust_id} and order_seq=#{order_seq}
+	</update>
+	
+	<select id="getTotalPrice" resultType="Long">
+		select total_price FROM eco.order_main WHERE cust_id=#{cust_id} AND order_seq=#{order_seq}
+	</select>
+
+	<select id="getPaidList" resultType="hashMap">
+	<!-- 	SELECT a.qty,b.goods_seq,b.goods_name, b.price,c.img_url 
+		FROM ECO.ORDER_detail a LEFT OUTER JOIN ECO.GOODS b
+		ON a.goods_seq = b.goods_seq
+		LEFT OUTER JOIN ECO.GOODS_DETAIL_IMG c 
+		ON c.goods_seq = a.goods_seq
+		WHERE a.order_seq IN (SELECT order_seq FROM ECO.order_main where cust_id=#{cust_id} AND order_status=3)    
+ -->		
+	<!-- 	SELECT a.GOODS_NAME,a.PRICE,d.qty,to_char(b.regdate, 'yyyymmdd'),c.delivery_status
+		FROM eco.goods a LEFT OUTER JOIN eco.order_main b
+		ON goods_seq IN (SELECT d.goods_seq 
+		  FROM order_detail d LEFT OUTER JOIN eco.order_main b
+		  ON  d.order_seq IN b.order_seq
+		  where cust_id=#{cust_id} AND order_status=3)
+		LEFT OUTER JOIN eco.order_detail d
+		ON d.order_seq = d.order_seq
+		LEFT OUTER JOIN eco.delivery_main c
+		ON  b.order_seq IN c.order_seq where cust_id=#{cust_id} AND order_status=3 -->
+		
+		   SELECT a.qty,a.order_seq,a.goods_seq,to_char(b.regdate, 'yyyymmdd') regdate,c.goods_name,c.price,d.delivery_status,e.IMG_URL
+			  FROM order_detail a LEFT OUTER JOIN order_main b
+			  ON a.order_seq = b.order_seq
+			  LEFT OUTER JOIN goods c
+			  ON a.goods_seq = c.goods_seq
+			  LEFT OUTER JOIN delivery_main d
+			  ON a.order_seq = d.order_seq
+        LEFT OUTER JOIN goods_thumb_nail e
+        ON a.goods_seq = e.goods_seq
+			   WHERE a.order_seq = #{order_seq} AND e.MAIN_YN='Y'
+	</select>
+	
+	<select id="getOrderedList" resultType="hashMap">
+		SELECT a.order_seq, a.paied_yn, to_char(a.regdate, 'yyyymmdd') REGDATE,a.total_price, b.delivery_status 
+		  FROM order_main a LEFT OUTER JOIN delivery_main b
+		  ON a.order_seq = b.order_seq
+		  where cust_id =#{cust_id} AND NOT order_status =5
+		  ORDER BY order_seq DESC
+	</select>
+	
+	<select id="getOrderedListAll" resultType="hashMap">
+		SELECT a.order_seq, a.paied_yn, to_char(a.regdate,'yyyymmdd') REGDATE,a.total_price, b.delivery_status 
+		  FROM order_main a LEFT OUTER JOIN delivery_main b
+		  ON a.order_seq=b.order_seq
+		  where NOT order_status=5
+		  ORDER BY order_seq DESC
+	</select>
+	
+
+	<update id="orderCancel" >
+		UPDATE order_main set order_status = 5 WHERE order_seq = #{order_seq}
+	</update>
+	
+	<update id="orderCommit">
+		UPDATE order_main set order_status = 6 WHERE order_seq = #{order_seq}
+	</update>
+	
+	<insert id="addPoint">
+		INSERT INTO point values(seq_point_seq.nextval,#{cust_id},#{order_seq},#{point},'add',#{cust_id},default,'','')
+	</insert>
+</mapper>

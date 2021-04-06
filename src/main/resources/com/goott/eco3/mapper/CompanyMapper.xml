@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.CompanyMapper">
+	
+	<select id="getCustList" resultType="map">
+		SELECT * FROM eco.company
+	</select>
+	
+	<!-- 업체 pk찾기 -->
+	<!-- 	
+	<select id="getCompany_seq" resultType="Long">
+		SELECT a.comp_seq
+		FROM eco.company a 
+		INNER JOIN eco.cust b ON (a.cust_Id = b.memberId)
+		WHERE memberId = #{memberId} AND member_yn='N'
+	</select>
+	-->
+	
+	
+	<!-- 특정 업체 정보가져오기 -->
+	<select id="getCompany" resultType="com.goott.eco3.domain.CompanyVO">
+		SELECT * FROM eco.company
+		WHERE cust_id=#{memberId}
+	</select>
+	
+	<!-- 회원 가입:company -->
+	<insert id="joinCompany">
+		INSERT INTO eco.company 
+		VALUES (
+			ECO.SEQ_COMP_SEQ.nextval,#{cust_id},#{comp_name},#{corp_num},
+			#{addr_post},#{addr_city},#{addr_detail}, default, default, 
+			#{cust_id}, default, #{cust_id},'-'
+		)
+	</insert>
+	
+	<!-- 회원 가입:cust_auth -->
+	<insert id="joinCompanyAuth">
+		INSERT INTO eco.cust_auth
+		VALUES (#{cust_id},'ROLE_COMPANY', default)
+	</insert>
+	
+	<!-- 회원 수정 -->
+	<update id="modifyCompany">
+		update eco.company
+		set addr_post=#{addr_post}, addr_city=#{addr_city}, addr_detail=#{addr_detail},
+		editUser=#{cust_id}, editDate=default
+		WHERE comp_seq = #{comp_seq}
+	</update>
+	
+	<!-- 회원 탈퇴시  -->
+	<update id="removeCompany">
+		update eco.company
+		set confirm_yn='N'
+		WHERE cust_id = #{cust_id}
+	</update>
+
+
+	
+</mapper>

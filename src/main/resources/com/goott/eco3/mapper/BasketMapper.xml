@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.BasketMapper">
+	
+	<select id="getBasketList" resultType="hashMap">
+		SELECT a.basket_seq,a.qty,b.goods_seq,b.goods_name, b.price,c.img_url 
+		FROM ECO.BASKET_detail a LEFT OUTER JOIN ECO.GOODS b
+		ON a.goods_seq = b.goods_seq
+		LEFT OUTER JOIN ECO.GOODS_THUMB_NAIL c 
+		ON a.goods_seq = c.goods_seq
+		WHERE a.BASKET_SEQ IN (SELECT basket.basket_seq FROM ECO.basket where cust_id=#{csut_id} AND delete_yn='N' AND purchase_yn='N') AND main_yn ='Y'
+	</select>
+	
+	<select id="getGoodsInfo" resultType="com.goott.eco3.domain.GoodsVOtest">
+		SELECT * FROM eco.goods WHERE goods_seq=#{goods_seq}
+	</select>
+	
+	<update id="delGoodsAtBasket">
+		UPDATE eco.basket_detail SET delete_yn='Y' WHERE goods_seq=#{goods_seq} and basket_seq in 
+		(SELECT basket_seq FROM basket where cust_id =#{cust_id})
+	</update>
+	
+	<update id="purGoodsAtBasket">
+		UPDATE eco.basket_detail SET purchase_yn='Y' WHERE goods_seq=#{goods_seq} and basket_seq in 
+		(SELECT basket_seq FROM basket where cust_id =#{cust_id})
+	</update>
+	
+	<select id="checkExistBasket"  resultType='Long'>
+		<!-- SELECT BASKET_SEQ FROM eco.basket WHERE cust_id = #{cust_id} -->
+		SELECT count(*) FROM eco.basket WHERE cust_id = #{cust_id}
+	</select>
+	
+	<select id="checkSameGoods"  resultType='Long'>
+		SELECT count(*) FROM eco.basket_detail WHERE goods_seq = #{goods_seq} and basket_seq=(SELECT basket_seq FROM BASKET where cust_id=#{cust_id} ) and purchase_yn='N' and delete_yn='N'
+	</select>
+	
+	<insert id="createBasket">
+		insert into BASKET values(seq_basket_seq.nextval,#{cust_id},default,#{cust_id},'','')
+	</insert>
+	
+	<insert id="addGoodsAtBasket">				
+		INSERT into eco.basket_detail values((SELECT basket_seq FROM basket 
+		WHERE cust_id in #{cust_id}),#{goods_seq},#{qty},default,default,default,#{cust_id},'','')	
+	</insert>
+	
+	<update id="changeQtyAtBasket">
+		UPDATE eco.basket_detail SET qty=#{qty} WHERE goods_seq=#{goods_seq} and basket_seq in 
+		(SELECT basket_seq FROM basket where cust_id =#{cust_id})
+	</update>
+	
+	<select id="countBasketGoods" resultType="int">
+		SELECT count(*) FROM basket_detail where basket_seq = (select basket_seq from basket where cust_id=#{cust_id}) AND purchase_yn='N' AND delete_yn='N'
+	</select>
+</mapper>

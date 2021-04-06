@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.GoodsCommentMapper">
+ 
+ 
+    <select id="commentCount" resultType="int">
+        SELECT
+            COUNT(*)
+        FROM GOODS_COMMENT
+    </select>
+    
+    <select id="commentList" resultType="com.goott.eco3.domain.GoodsCommentVO">
+        SELECT
+            *
+        FROM GOODS_COMMENT
+    </select>
+    
+    
+    <insert id="commentInsert" parameterType="com.goott.eco3.domain.GoodsCommentVO">
+        INSERT INTO
+        GOODS_COMMENT (GOODS_SEQ, CUST_ID, STAR, REGDATE, GOODS_COMMENT_SEQ, MEMO, GOODS_COMENT_IMG_URL)
+        VALUES(#{GOODS_SEQ},#{CUST_ID},#{STAR},#{REGDATE},#{GOODS_COMMENT_SEQ},#{MEMO},#{GOODS_COMMENT_IMG_URL}) 
+    </insert>
+    
+    <update id="commentUpdate" parameterType="com.goott.eco3.domain.GoodsCommentVO">
+        UPDATE GOODS_COMMENT
+            SET
+            MEMO = #{MEMO}
+        WHERE GOODS_SEQ = #{GOODS_SEQ}
+    </update>
+    
+    <delete id="commentDelete" parameterType="int">
+        DELETE FROM GOODS_COMMENT WHERE GOODS_COMMENT_SEQ = #{GOODS_COMMENT_SEQ}
+    </delete>
+</mapper>
+
+
+
+

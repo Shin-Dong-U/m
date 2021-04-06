@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.ChartMapper">
+	
+	<select id="getMonthSale" resultType="hashMap">
+<!-- 	 <![CDATA[
+	   SELECT sum(total_price) monthlysales 
+  		FROM order_main where TO_CHAR(regdate,'YYYYMMDD')>=#{dateRange1} 
+  		AND TO_CHAR(regdate,'YYYYMMDD')<#{dateRange2}
+    ]]>		 -->
+    
+  	 select to_char(regdate, 'MM') as MONTH, sum(nvl(total_price,0)) as TOTAL_SALE
+	from order_main
+	WHERE to_char(regdate, 'YYYY')=#{searchRange}
+	group by to_char(regdate, 'MM')
+	order by to_char(regdate, 'MM')
+	</select>
+</mapper>

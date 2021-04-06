@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.goott.eco3.mapper.AdminMapper">
+
+	<!-- Cust Map 지정 -->
+	<resultMap type="com.goott.eco3.domain.CustVO" id="custMap">
+		<result property="memberId" column="memberId" />
+		<result property="password" column="password" />
+		<result property="name" column="name" />
+		<result property="phone" column="phone" />
+		<result property="email" column="email" />
+		<result property="sex" column="sex" />
+		<result property="addr_post" column="addr_post" />
+		<result property="addr_city" column="addr_city" />
+		<result property="addr_detail" column="addr_detail" />
+		<result property="birth" column="birth" />
+		<result property="company_yn" column="company_yn" />
+		<result property="member_yn" column="member_yn" />
+		<result property="regDate" column="regDate" />
+		<result property="regUser" column="regUser" />
+		<result property="editDate" column="editDate" />
+		<result property="editUser" column="editUser" />
+		<result property="myTree" column="myTree" />
+		<result property="myMil" column="myMil" />
+		<result property="bar_status" column="bar_status" />
+		<result property="admin_yn" column="admin_yn" />
+		<result property="seed_yn" column="seed_yn" />
+	</resultMap>
+	
+	<!-- Company Map 지정 -->
+	<resultMap type="com.goott.eco3.domain.CompanyVO" id="compMap">
+		<result property="cust_seq" column="cust_seq" />
+		<result property="cust_id" column="cust_id" />
+		<result property="comp_name" column="comp_name" />
+		<result property="corp_num" column="corp_num" />
+		<result property="addr_post" column="addr_post" />
+		<result property="addr_city" column="addr_city" />
+		<result property="addr_detail" column="addr_detail" />
+		<result property="confirm_yn" column="confirm_yn" />
+		<result property="regDate" column="regDate" />
+		<result property="regUser" column="regUser" />
+		<result property="editDate" column="editDate" />
+		<result property="editUser" column="editUser" />
+		<result property="memo" column="memo" />
+	</resultMap>
+
+	<!-- admin Map 지정 -->
+	<resultMap type="com.goott.eco3.domain.AdminVO" id="adminMap">
+		<result property="cust_id" column="cust_id" />
+		<result property="name" column="name" />
+		<result property="acc_level" column="acc_level" />
+		<result property="regDate" column="regDate" />
+		<result property="regUser" column="regUser" />
+		<result property="editDate" column="editDate" />
+		<result property="editUser" column="editUser" />
+	</resultMap>
+	
+	<!-- admin Map 지정 -->
+	<resultMap type="com.goott.eco3.domain.MemberVO" id="memberMap">
+		<collection property="custVO" resultMap="custMap" />
+		<collection property="compVO" resultMap="compMap" />
+		<collection property="adminVO" resultMap="adminMap" />
+	</resultMap>
+
+	<!-- 모든 관리자 정보 가져오기 
+	<select id="getAdminList" resultMap="memberMap">
+		SELECT /*+ Index_DESC(a regIndex) */ a.*,
+		b.cust_id, b.acc_level
+		FROM eco.cust a INNER JOIN eco.admin b
+		ON (a.memberId = b.cust_Id)
+		WHERE a.admin_yn='Y'
+		OFFSET #{start} ROWS FETCH FIRST #{amount} ROWS ONLY
+	</select>
+	-->
+	<!-- 모든 관리자 정보 가져오기 --> 
+	<select id="getAdminList" resultMap="memberMap">
+	<![CDATA[
+		SELECT * 
+		FROM
+		(
+			SELECT ROWNUM RNUM, T.*
+			FROM 
+			(
+				SELECT /*+ Index_DESC(a regIndex) */ a.*,
+				b.cust_id, b.acc_level
+				FROM eco.cust a INNER JOIN eco.admin b
+				ON (a.memberId = b.cust_Id)
+				WHERE a.admin_yn='Y'
+				)T
+			WHERE ROWNUM <= #{start} + #{amount}
+		)TT
+		WHERE 	
+			TT.RNUM > #{start}
+	]]>	
+	</select>
+	
+	
+	
+	
+	<!-- 관리자 목록 갯수 -->
+	<select id="totalAdminList" resultType="int">
+		SELECT count(*)
+		FROM eco.cust a INNER JOIN eco.admin b
+		ON (a.memberId = b.cust_Id)
+		WHERE admin_yn='Y'
+	</select>
+	
+	<!-- 모든 업체 정보 가져오기 
+	<select id="getCompanyList" resultMap="memberMap">
+		SELECT /*+ Index_DESC(a regIndex) */ a.*,
+    	b.cust_id, b.comp_seq, b.comp_name, b.confirm_yn, b.corp_num, b.memo
+		FROM eco.cust a INNER JOIN eco.company b
+		ON (a.memberId = b.cust_Id)
+		where a.company_yn='Y'
+		OFFSET #{start} ROWS FETCH FIRST #{amount} ROWS ONLY
+	</select>
+	-->
+	<!-- 모든 업체 정보 가져오기 -->
+	<select id="getCompanyList" resultMap="memberMap">
+	<![CDATA[
+		SELECT * 
+		FROM
+		(
+			SELECT ROWNUM RNUM, T.*
+			FROM 
+			(
+				SELECT /*+ Index_DESC(a regIndex) */ a.*,
+		    	b.cust_id, b.comp_seq, b.comp_name, b.confirm_yn, b.corp_num, b.memo
+				FROM eco.cust a INNER JOIN eco.company b
+				ON (a.memberId = b.cust_Id)
+				where a.company_yn='Y'
+			)T
+			WHERE ROWNUM <= #{start} + #{amount}
+		)TT
+		WHERE 	
+			TT.RNUM > #{start}
+	]]>
+	</select>
+	
+	
+	<!-- 업체 목록 갯수 -->
+	<select id="totalCompanyList" resultType="int">
+		SELECT count(*)
+		FROM eco.cust a INNER JOIN eco.company b
+		ON (a.memberId = b.cust_Id)
+		where company_yn='Y'
+	</select>
+	
+	<!-- 모든 일반사용자 정보 가져오기
+ 	<select id="getCustList" resultMap="memberMap">
+		SELECT /*+ Index_DESC(a regIndex) */ a.*
+		FROM eco.cust a
+		where company_yn='N' AND admin_yn='N'
+		OFFSET #{start} ROWS FETCH FIRST #{amount} ROWS ONLY
+	</select>
+	 -->
+	<select id="getCustList" resultMap="memberMap">
+	<![CDATA[
+		SELECT * 
+		FROM
+		(
+			SELECT ROWNUM RNUM, T.*
+			FROM 
+			(
+				SELECT /*+ Index_DESC(a regIndex) */ a.*
+				FROM eco.cust a
+				where company_yn='N' AND admin_yn='N'
+			)T
+			WHERE ROWNUM <= #{start} + #{amount}
+		)TT
+		WHERE 	
+			TT.RNUM > #{start}
+	]]>
+	</select>
+	 
+	<!-- 일반사용자 목록 갯수 -->
+	<select id="totalCountCustList" resultType="int">
+		SELECT count(*)
+		FROM eco.cust a
+		where company_yn='N' AND admin_yn='N'
+	</select>
+	
+	<!-- 업체 승인 -->
+	<update id="confirmCompany" >
+		update eco.company
+		set confirm_yn = 'Y', editDate=default, editUser=#{loginId}, regUser=#{loginId}
+		where cust_id=#{memberId}
+	</update>
+	
+	<!-- 사용자 승인 수정 -->
+	<update id="modCustCompany" >
+		update eco.cust
+		set regDate =default, editDate=default, editUser=#{loginId}, regUser=#{loginId}
+		where memberId=#{memberId}
+	</update>
+	
+	
+	<!-- 업체 권한 승인-->
+	<insert id="joinCompanyAuth" >
+		insert into eco.cust_Auth
+		VALUES(#{memberId}, 'ROLE_COMPANY')
+	</insert>
+	
+	
+	<!-- 관리자 등업 -->
+	<update id="regAdmin" >
+		INSERT INTO eco.admin
+		VALUES(#{adminVO.cust_id}, #{adminVO.name}, #{adminVO.acc_level}, 
+				default, #{loginId}, default, #{loginId})
+	</update>
+	
+	<!-- 관리자 권한 승인-->
+	<insert id="joinAdminAuth" >
+		insert into eco.cust_auth
+		VALUES(#{cust_id}, 'ROLE_ADMIN')
+	</insert>
+	
+	<!-- 관리자 cust 변경-->
+	<update id="confirmCustAdmin" >
+		update  eco.cust
+		set admin_yn='Y', regDate=default, regUser=#{loginId}, 
+			editDate=default, editUser=#{loginId}
+		where memberId=#{memberId}
+	</update>
+	
+	<!-- 관리자 레벨변경 -->
+	<update id="modAdminLevel" >
+		update eco.Admin 
+		set acc_level = #{acc_level}
+		where cust_id=#{cust_id}
+	</update>
+	
+	<!-- cust 정보 수정 -->
+	<update id="modAdmin_cust">
+		update eco.cust
+		set 
+		<if test="custVO.password != '' and custVO.password != null">
+		password=#{custVO.password},
+		</if>
+		email=#{custVO.email}, birth=#{custVO.birth}, 
+		member_yn=#{custVO.member_yn}, sex=#{custVO.sex},
+		editDate=default, editUser=#{loginId}
+		where memberId=#{custVO.memberId}
+	</update>
+	
+	<!-- comp 정보 수정 -->
+	<update id="modAdmin_comp">
+		update eco.company
+		set 
+		comp_name=#{compVO.comp_name}, corp_num=#{compVO.corp_num},
+		editUser=#{loginId}, editDate=default
+		WHERE cust_id = #{compVO.cust_id}
+	</update>
+	
+	<!-- admin 정보 수정 -->
+	<update id="modAdmin_admin">
+		update eco.admin
+		set 
+		acc_level=#{adminVO.acc_level}, 
+		editDate=default, editUser=#{loginId}
+		where cust_id=#{adminVO.cust_id}
+	</update>
+
+	<!-- 회원 탈퇴 -> 복구 -->
+	<insert id="regCust_Auth">
+		INSERT INTO eco.cust_auth
+		VALUES(#{memberId}, 'ROLE_CUST')
+	</insert>
+	
+	<!-- 회원 존재 -->
+	<select id="getCustAuth" resultType="String">
+		SELECT case when count(*)=0 then 'false' else 'true' end
+		FROM eco.cust_auth 
+		WHERE memberId=#{memberId}
+	</select>
+	
+	
+	<!-- 관리자 -> 일반상용자 이동: cust_auth에 권한 삭제 -->
+	<delete id="removeAdmin_custAuth">
+		delete eco.cust_auth 
+		WHERE memberId=#{memberId} and auth='ROLE_ADMIN'
+	</delete>
+	
+	<!-- 관리자 -> 일반상용자 이동: admin에 권한 삭제 -->
+	<delete id="removeAdmin_admin">
+		delete eco.admin
+		WHERE cust_id=#{cust_id}
+	</delete>
+	
+	<!-- 관리자 -> 일반사용자 이동: cust admin_yn변경 -->
+	<update id="modCust_adminYN" >
+		UPDATE eco.cust 
+		SET admin_yn='N', 
+		editDate=default, editUser=#{loginId} 
+		WHERE memberId=#{memberId}
+	</update>
+
+
+</mapper>

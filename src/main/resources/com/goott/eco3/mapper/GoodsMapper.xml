@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.GoodsMapper">
+<!-- 이부분 수정  -->
+	<resultMap id="goodsMap" type="hashMap" >
+		<result property="GOODS_SEQ" column="GOODS_SEQ"/>
+		<result property="COMP_SEQ" column="COMP_SEQ"/>
+		<result property="GOODS_NAME" column="GOODS_NAME"/>
+		<result property="PRICE" column="PRICE"/>
+		<result property="QTY" column="QTY"/>
+		<result property="MATERIAL" column="MATERIAL"/>
+		<result property="CATEGORY" column="CATEGORY"/>
+		<result property="REQ_OPTION" column="REQ_OPTION"/>
+		<result property="STAR" column="STAR"/>
+		<result property="COMP_NAME" column="COMP_NAME"/>
+		<result property="GOODS_DETAIL" column="GOODS_DETAIL" jdbcType="CLOB" javaType="java.lang.String" />
+	</resultMap>
+	
+	
+	<insert id="test" parameterType="map">
+		INSERT INTO TB_TEST VALUES(#{no}, #{val})
+	</insert>
+	
+	<select id="totalCountGoodsList" resultType="int" parameterType="com.goott.eco3.common.Criteria">
+		SELECT COUNT(*) FROM GOODS  
+		WHERE
+			SALE_YN = 'Y'
+			<if test="category != null and category != ''">
+			AND CATEGORY = #{category}	
+			</if>
+			<if test="keyword != null and keyword != ''">
+			AND GOODS_NAME LIKE '%' || #{keyword} || '%'
+			</if>
+	</select>
+	
+	<!-- 12C이상 사용가능 
+	<select id="goodsList" resultType="hashmap" parameterType="com.goott.eco.common.Criteria">
+		SELECT 
+			  G.GOODS_SEQ, G.GOODS_NAME, G.PRICE, G.ECO_SCORE
+			, GTN.IMG_URL
+			, (SELECT NVL( ROUND( AVG( NVL(STAR,0) ), 1 ), 0) FROM GOODS_COMMENT WHERE GOODS_COMMENT.GOODS_SEQ = G.GOODS_SEQ) AS STAR
+		FROM GOODS G 
+			LEFT OUTER JOIN GOODS_THUMB_NAIL GTN ON G.GOODS_SEQ = GTN.GOODS_SEQ AND GTN.MAIN_YN = 'Y'
+		WHERE
+			G.SALE_YN = 'Y'
+			<if test="category != null and category != ''">
+			AND G.CATEGORY = #{category}	
+			</if>
+			<if test="keyword != null and keyword != ''">
+			AND G.GOODS_NAME LIKE '%' || #{keyword} || '%'
+			</if>
+		ORDER BY G.GOODS_SEQ
+		OFFSET #{start} ROWS FETCH FIRST #{amount} ROWS ONLY
+	</select>
+	 -->
+	 
+	 <select id="goodsList" resultType="hashmap" parameterType="com.goott.eco3.common.Criteria">
+		SELECT * 
+		FROM
+		(
+			SELECT ROWNUM RNUM, T.*
+			FROM 
+			(
+				SELECT 
+					  G.GOODS_SEQ, G.GOODS_NAME, G.PRICE, G.ECO_SCORE
+					, GTN.IMG_URL
+					, (SELECT NVL( ROUND( AVG( NVL(STAR,0) ), 1 ), 0) FROM GOODS_COMMENT WHERE GOODS_COMMENT.GOODS_SEQ = G.GOODS_SEQ) AS STAR
+				FROM GOODS G 
+					LEFT OUTER JOIN GOODS_THUMB_NAIL GTN ON G.GOODS_SEQ = GTN.GOODS_SEQ AND GTN.MAIN_YN = 'Y'
+				WHERE
+					G.SALE_YN = 'Y'
+					<if test="category != null and category != ''">
+					AND G.CATEGORY = #{category}	
+					</if>
+					<if test="keyword != null and keyword != ''">
+					AND G.GOODS_NAME LIKE '%' || #{keyword} || '%'
+					</if>
+				ORDER BY G.GOODS_SEQ
+			)T
+			<![CDATA[
+			WHERE ROWNUM <= #{start} + #{amount}
+		)TT
+		WHERE 	
+			TT.RNUM > #{start}
+	]]>		
+	</select>
+	
+	<select id="goodsDetail" parameterType="int" resultMap="goodsMap">
+		SELECT
+			  G.GOODS_SEQ, G.COMP_SEQ, G.GOODS_NAME, G.PRICE, G.QTY, G.MATERIAL, G.CATEGORY
+			, G.REQ_OPTION
+			, G.GOODS_DETAIL
+			, (SELECT NVL( ROUND( AVG( NVL(STAR,0) ), 1 ), 0) FROM GOODS_COMMENT WHERE GOODS_COMMENT.GOODS_SEQ = G.GOODS_SEQ) AS STAR
+			, COMP.COMP_NAME
+		FROM GOODS G
+		LEFT OUTER JOIN COMPANY COMP ON G.COMP_SEQ = COMP.COMP_SEQ
+		WHERE
+			G.SALE_YN = 'Y'
+			AND G.GOODS_SEQ = #{goods_seq}
+	</select>
+	
+	<select id="goodsDetailThumbImg" parameterType="int" resultType="map">
+		SELECT 
+			  GOODS_SEQ, GOODS_THUMB_NAIL_SEQ
+			, IMG_URL
+			, MAIN_YN
+		FROM GOODS_THUMB_NAIL
+		WHERE 
+			GOODS_SEQ = #{goods_seq}
+	</select>
+	
+	<select id="goodsDetailImg" parameterType="int" resultType="map">
+		SELECT
+			GOODS_SEQ, IMG_ORDER, IMG_URL, GOODS_DETAIL_IMG_KEY
+		FROM GOODS_DETAIL_IMG
+		WHERE 
+			GOODS_SEQ = #{goods_seq}
+	</select>
+	
+	<select id="goodsReqOption" parameterType="int" resultType="map">
+		SELECT
+			GOODS_SEQ, GOODS_REQ_OPTION_SEQ, PRICE, OPTION_NAME
+		FROM GOODS_REQ_OPTION
+		WHERE 
+			GOODS_SEQ = #{goods_seq}
+	</select>
+	
+	
+	<select id="totalCountGoodsComment" parameterType="map" resultType="int">
+		SELECT COUNT(*) FROM GOODS_COMMENT WHERE GOODS_SEQ = #{goodsSeq}
+	</select>
+	
+	<!-- OFFSET ORACLE 12C부터 사용가능
+	<select id="goodsComment" parameterType="map" resultType="map">
+		SELECT
+			  GC.GOODS_COMMENT_SEQ, GC.GOODS_SEQ, GC.CUST_ID, GC.STAR, GC.MEMO, TO_CHAR(GC.REGDATE, 'YY/MM/DD hh:mi:ss') AS REGDATE
+			, C.NAME
+			, G.GOODS_NAME
+		FROM GOODS_COMMENT GC
+			INNER JOIN CUST C ON GC.CUST_ID = C.MEMBERID
+			INNER JOIN GOODS G ON GC.GOODS_SEQ = G.GOODS_SEQ
+		WHERE 
+			GC.GOODS_SEQ = #{goodsSeq}
+		ORDER BY REGDATE DESC
+		OFFSET #{start} rows FETCH FIRST 5 ROWS ONLY
+	</select>
+	 -->
+	 
+	<select id="goodsComment" parameterType="map" resultType="map">
+	
+		SELECT * 
+		FROM
+		(
+			SELECT ROWNUM RNUM, T.*
+			FROM 
+			(
+				SELECT
+					  GC.GOODS_COMMENT_SEQ, GC.GOODS_SEQ, GC.CUST_ID, GC.STAR, GC.MEMO, TO_CHAR(GC.REGDATE, 'YY/MM/DD hh:mi:ss') AS REGDATE
+					, C.NAME
+					, G.GOODS_NAME
+				FROM GOODS_COMMENT GC
+					INNER JOIN CUST C ON GC.CUST_ID = C.MEMBERID
+					INNER JOIN GOODS G ON GC.GOODS_SEQ = G.GOODS_SEQ
+				WHERE 
+					GC.GOODS_SEQ = #{goodsSeq}
+				ORDER BY REGDATE DESC
+			)T
+			<![CDATA[
+			WHERE ROWNUM <= #{start} + 5
+		)TT
+		WHERE 	
+			TT.RNUM > #{start}
+		]]>	
+	</select>
+	
+	<select id="insertGoods" statementType="CALLABLE" parameterType="com.goott.eco3.domain.GoodsVO">
+		{call PROC_GOODS_INS(
+		     #{goods_seq,mode=OUT,jdbcType=INTEGER}
+		    ,#{comp_seq,mode=IN,jdbcType=INTEGER}
+		    ,#{goods_name,mode=IN,jdbcType=VARCHAR}
+		    ,#{goods_detail,mode=IN,jdbcType=CLOB}
+		    ,#{price,mode=IN,jdbcType=INTEGER}
+		    ,#{qty,mode=IN,jdbcType=INTEGER}
+		    ,#{material,mode=IN,jdbcType=VARCHAR}
+		    ,#{category,mode=IN,jdbcType=INTEGER}
+		    ,#{eco_score,mode=IN,jdbcType=INTEGER}
+		    ,#{reguser,mode=IN,jdbcType=VARCHAR}
+		    ,#{req_option,mode=IN,jdbcType=VARCHAR}
+		    )
+		}
+	</select>
+	
+	<update id="updateReview" parameterType="com.goott.eco3.domain.GoodsVO$GoodsCommentVO">
+		UPDATE GOODS_COMMENT 
+		SET 
+			STAR = #{star}
+			, MEMO = #{memo}
+		WHERE 
+			CUST_ID = #{cust_id}
+			AND GOODS_COMMENT_SEQ = #{goods_comment_seq}
+	</update>
+	
+	<delete id="deleteReview" parameterType="com.goott.eco3.domain.GoodsVO$GoodsCommentVO">
+		DELETE GOODS_COMMENT 
+		WHERE 
+			CUST_ID = #{cust_id}
+			AND GOODS_COMMENT_SEQ = #{goods_comment_seq}
+	</delete>
+	
+	
+	<insert id="insertReview" parameterType="com.goott.eco3.domain.GoodsVO$GoodsCommentVO">
+		INSERT INTO GOODS_COMMENT(
+			  GOODS_COMMENT_SEQ
+			, GOODS_SEQ
+			, CUST_ID
+			, STAR
+			, MEMO
+			, REGDATE
+		) VALUES(
+			  SEQ_GOODS_COMMENT_SEQ.NEXTVAL
+			, #{goods_seq}
+			, #{cust_id}
+			, #{star}
+			, #{memo}
+			, SYSDATE
+		)
+	</insert>
+	
+	<delete id="realDeleteGoods" parameterType="int">
+		DELETE FROM GOODS WHERE GOODS_SEQ = #{goodsSeq}
+	</delete>
+	
+	<insert id="insertGoodsThumbNail" parameterType="com.goott.eco3.domain.GoodsVO$GoodsThumbNailVO">
+		INSERT INTO GOODS_THUMB_NAIL(
+			 GOODS_SEQ
+			,GOODS_THUMB_NAIL_SEQ
+			,IMG_URL
+			,MAIN_YN
+			,REGDATE
+			,REGUSER
+			,EDITDATE
+			,EDITUSER
+		) VALUES (
+			#{goods_seq}
+			,(SELECT NVL(MAX(GOODS_THUMB_NAIL_SEQ),0) + 1 FROM GOODS_THUMB_NAIL WHERE GOODS_SEQ = #{goods_seq})
+			,#{img_url}
+			,(SELECT CASE WHEN NVL(MAX(GOODS_THUMB_NAIL_SEQ),0) = 0 THEN 'Y' ELSE 'N' END FROM GOODS_THUMB_NAIL WHERE GOODS_SEQ = #{goods_seq}) 
+			,SYSDATE
+			,#{reguser}
+			,NULL
+			,NULL )
+	</insert>
+	
+	<select id="goodsCategoryList" resultType="map">
+		SELECT CATE_SEQ, CATE_NAME FROM GOODS_CATEGORY ORDER BY CATE_SEQ ASC
+	</select>
+	
+	<insert id="insertGoodsDetailImg" parameterType="com.goott.eco3.domain.GoodsVO$GoodsDetailImgVO">
+		INSERT INTO GOODS_DETAIL_IMG(
+			  GOODS_SEQ
+			, IMG_ORDER
+			, IMG_URL
+			, REGDATE
+			, REGUSER
+		) VALUES(
+			  #{goods_seq}
+			, #{img_order}
+			, #{img_url}
+			, SYSDATE
+			, #{reguser}
+		)
+	</insert>
+	
+	<!-- 상품 상세설명 컬럼만 업데이트 -->
+	<update id="updateGoodsOnlyGoodsDetailColumn" parameterType="com.goott.eco3.domain.GoodsVO">
+		UPDATE GOODS SET 
+			GOODS_DETAIL = #{goods_detail}
+			, EDITDATE = SYSDATE
+			, EDITUSER = #{reguser} 
+		WHERE 
+			GOODS_SEQ = #{goods_seq}
+			AND COMP_SEQ = (SELECT COMP_SEQ FROM COMPANY WHERE CUST_ID = #{reguser})
+	</update>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.goott.eco3.mapper.DeliveryMapper">
+
+
+	<select id="getallDeliveryList" resultType="com.goott.eco3.domain.DeliveryVO">
+		SELECT * FROM eco.delivery_main
+				
+	</select>
+
+	
+	<select id="getDeliveryList" resultType="com.goott.eco3.domain.DeliveryVO">
+		SELECT * FROM eco.delivery_main where invoice_no in #{invoice_no}
+				
+	</select>
+
+	
+	<select id= "getPaidGoodsList" resultType="com.goott.eco3.domain.GoodsVO">
+		SELECT  * FROM eco.goods where goods_seq in (    
+    		SELECT goods_seq from order_detail where order_seq in (
+    		SELECT order_seq FROM order_main where order_status=3))
+	</select>
+		
+	
+	<select id="getmyDeliveryList"  resultType="com.goott.eco3.domain.DeliveryVO">
+         SELECT  * FROM delivery_main where order_seq in (
+    SELECT order_seq FROM order_main where order_status=3 AND cust_id=#{cust_id})
+    </select>
+
+<!-- <select id="getmyDeliveryList"  resultType="com.goott.eco3.domain.DeliveryVO">
+	SELECT  * FROM delivery_main where order_seq in (
+    SELECT order_seq FROM order_main where order_status=3 AND cust_id=#{cust_id})
+	
+</select> -->
+</mapper>
